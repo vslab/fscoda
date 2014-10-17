@@ -1,0 +1,14 @@
+video('hd') :- screen_quality('hd'), supported_codec('H.264'), \+ battery_level('low').
+
+use_qrcode(X) :- user_prefer(qr_code), qr_decoder(X), device('camera').
+use_qrcode(X) :- qr_decoder(X), device('camera'), \+ device('irda'), \+ device('rfid_reader'), \+ device('bluetooth').
+
+direct_comm :- device('irda').
+direct_comm :- device('bluetooth').
+direct_comm :- device('rfid_reader').
+
+% facts made queriable
+orientation(S) :- orientation0(S).
+sscreen(S) :- sscreen0(S).
+supported_media(F) :- supported_media0(F).
+camera(C) :- camera0(C).

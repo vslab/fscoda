@@ -1,0 +1,4 @@
+ - Replace Makefile with xbuild-based system
+ - Use NuGet for YieldProlog and Unquote
+ - Investigate alternatives to FSharpx and Unquote for running quotations
+ - Add complex and more interesting examples
