@@ -6,6 +6,13 @@ type Code = ReflectedDefinitionAttribute
 type EntryPointAttribute() =
   inherit System.Attribute()
 
+type ContextAttribute(assemblyId:string) =
+  inherit System.Attribute()
+  member x.Name = assemblyId
+
+type ContextInitAttribute() =
+  inherit System.Attribute()
+
 type TypedPredAttribute() =
   inherit System.Attribute()
 
@@ -269,21 +276,24 @@ module Runtime =
 
       | _ -> failwith "Trapoline on a non-reflected method"
 
+  let private getMethods<'T> (assembly:Assembly) =
+    let flags = BindingFlags.NonPublic ||| BindingFlags.Public ||| BindingFlags.Static
+    [ for typ in assembly.GetTypes() do
+      for mi in typ.GetMethods(flags) do
+      if mi.GetCustomAttributes(typeof<'T>, false).Length <> 0 then yield mi ]
+
+  let private initContext assembly =
+    for m in getMethods<ContextInitAttribute>(assembly) do
+      callTramp m [| |] |> ignore
 
   let private startEntryPoint args =
-    if trace then
-      printfn "Running %A" (Assembly.GetEntryAssembly())
-    let types = Assembly.GetEntryAssembly().GetTypes()
-    let flags = BindingFlags.NonPublic ||| BindingFlags.Public ||| BindingFlags.Static
-    let entryPoints =
-      [ for typ in types do
-        for mi in typ.GetMethods(flags) do
-        if mi.GetCustomAttributes(typeof<EntryPointAttribute>, false).Length <> 0 then yield mi ]
     let entryPoint =
-      match entryPoints with
+      match getMethods<EntryPointAttribute>(Assembly.GetEntryAssembly()) with
         | [it] -> it // exactly one entry point
         | _ -> failwith "Entry point not found!"
 
+    for attr in entryPoint.GetCustomAttributes(typeof<ContextAttribute>, false) do
+      initContext (Assembly.Load((attr :?> ContextAttribute).Name))
     // run the entry point
     callTramp entryPoint args |> ignore
 
@@ -293,4 +303,5 @@ module Runtime =
 
   let debug([<ParamArray>] args) =
     trace <- true
+    printfn "Running %A" (Assembly.GetEntryAssembly())
     startEntryPoint [| |]
