@@ -17,6 +17,16 @@ example-context.cs: ypc.exe example.P
 	 echo "}}" ; \
 	) > $@
 
+medici.cs: ypc.exe medici.P
+	(echo "namespace Medici {"; \
+	 echo "using System;" ; \
+	 echo "using System.Collections.Generic;" ; \
+	 echo "using YieldProlog;" ; \
+	 echo "public class MediciContext {" ; \
+	 mono ypc.exe < medici.P ; \
+	 echo "}}" ; \
+	) > $@
+
 example-context.dll: YP.dll example-context.cs
 	gmcs -out:$@ -target:library -r:YP.dll example-context.cs
 
