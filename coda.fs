@@ -212,11 +212,14 @@ module Runtime =
               match dboundVars.TryFind(name) with
                 | None -> Expr.Coerce(<@@ failwith "Context inconsistency detected" @@>, value.Type)
                 | Some lazyFallback -> Expr.Application(lazyFallback, <@ () @>)
-            let vars,solVar,goal = compileGoal goal
+            let vaVars,solVar,goal = compileGoal goal
             let boundVars = boundVars.Add(solVar.Name)
-            let value = Expr.IfThenElse(<@ context.Check(%%goal) @>, v, fallbackValue)
+            let vaExpr = solVarToExpr vaVars solVar
+            let value = Expr.IfThenElse(<@ context.Solve(%%goal, %vaExpr) @>,
+                            compileCoda boundVars dboundVars vaVars vaExpr v,
+                            fallbackValue)
             let lazyValue = Expr.Lambda(Var("unused", unitType),
-                                        makeSolBinding vars solVar value)
+                                        makeSolBinding vaVars solVar value)
             let lazyVar = Var(name, lazyValue.Type)
             let dboundVars = dboundVars.Add(name, Expr.Var(lazyVar))
             Expr.Let(lazyVar, lazyValue,

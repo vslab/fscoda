@@ -11,6 +11,10 @@ let dletExample () =
   let vcanvas = getHDCanvas () |- video("hd")
   refreshUI vcanvas
 
+let dletExample2 () =
+  let decoder = ctx?decoder |- use_qrcode(ctx?decoder)
+  refreshUI decoder
+
 let getRemoteData url =
   match ctx with
     | _ when !- (orientation("landscape"), sscreen("large"), supported_media("png")) ->
@@ -49,6 +53,7 @@ let main () =
   initFacts ()
 
   dletExample ()
+  dletExample2 ()
   let img = getExhibitData ()
   ()
 
