@@ -33,6 +33,10 @@ module Runtime =
   let mutable private trace = false
 
   type private Context() =
+    let rec iterSols f = function
+      | [] -> seq { yield f () }
+      | h::t -> seq { for _ in h do for x in iterSols f t do yield x }
+
     member this.Tell(Fact(name, args)) =
       if trace then
         printfn "Assert %A %A" name args
@@ -44,30 +48,19 @@ module Runtime =
       for _ in YP.retract(Functor.make(name, args)) do
         ()
 
-    member this.Solve(goal:seq<bool>[], solution) =
-      let rec solve (sol:Dictionary<string,obj>) g =
-        match g with
-          | [] -> seq { yield false }
-          | h::t ->
-            seq {
-              for _ in h do
-                for _ in solve null t do
-                  if sol <> null then
-                    for entry in new Dictionary<_,_>(sol) do
-                      if trace then
-                        printfn "Solution %A" entry
-                      sol.[entry.Key] <- (entry.Value :?> Variable).getValue()
-                  yield false
-            }
+    member this.Iter(goal:seq<bool>[], f) =
+      goal |> Array.toList |> iterSols f
 
-      goal
-      |> Array.toList
-      |> solve solution
+    member this.Solve(goal:seq<bool>[], solution:Dictionary<string,obj>) =
+      let cloneSolution () =
+        if solution <> null then
+          for entry in new Dictionary<_,_>(solution) do
+            if trace then
+              printfn "Solution %A" entry
+            solution.[entry.Key] <- (entry.Value :?> Variable).getValue()
+      this.Iter(goal, cloneSolution)
       |> Seq.tryPick Some
       |> Option.isSome
-
-    member this.Check(goal) =
-      this.Solve(goal, null)
 
   // Global context, only accessible by the runtime
   let private context = new Context()
@@ -87,6 +80,9 @@ module Runtime =
     failwith "Stub to be replaced by interpreter/compiler"
 
   let (!-) y : bool =
+    failwith "Stub to be replaced by interpreter/compiler"
+
+  let (!--) y : seq<bool> =
     failwith "Stub to be replaced by interpreter/compiler"
 
   let (?) x y =
@@ -260,13 +256,16 @@ module Runtime =
         let types = mi.GetParameters()
         if trace then
           printfn "Trampoline! %A(%A) [%A/%A]" mi args (args.Length) (types.Length)
+          printfn "%A" mi
+          printfn "%s" (quot.Decompile())
 
         if types.Length <> args.Length then
           failwith "Mismatch between args and signature"
 
         let translated = compileCoda (Set.empty) (Map.empty) (Set.empty) (Unchecked.defaultof<_>) quot
         if trace then
-          printfn "%A\n%s\ntranslated to\n%s" mi (quot.Decompile()) (translated.Decompile())
+          printfn "translated to"
+          printfn "%s" (translated.Decompile())
 
         let call =
           if args.Length = 0 then

@@ -15,6 +15,10 @@ let dletExample2 () =
   let decoder = ctx?decoder |- use_qrcode(ctx?decoder)
   refreshUI decoder
 
+let forExample () =
+  for ctx in !-- use_qrcode(ctx?decoder) do
+    refreshUI ctx?decoder
+
 let getRemoteData url =
   match ctx with
     | _ when !- (orientation("landscape"), sscreen("large"), supported_media("png")) ->
@@ -54,6 +58,7 @@ let main () =
 
   dletExample ()
   dletExample2 ()
+  forExample ()
   let img = getExhibitData ()
   ()
 
