@@ -12,12 +12,13 @@ let dletExample () =
   refreshUI vcanvas
 
 let dletExample2 () =
-  let decoder = ctx?decoder |- use_qrcode(ctx?decoder)
-  refreshUI decoder
+  let decoder = ctx?media |- supported_media(ctx?media)
+  printfn "%s" decoder
 
 let forExample () =
-  for ctx in !-- use_qrcode(ctx?decoder) do
-    refreshUI ctx?decoder
+  printfn "Supported media:"
+  for _ in !-- supported_media(ctx?media) do
+    printfn " - %s" ctx?media
 
 let getRemoteData url =
   match ctx with
@@ -50,6 +51,9 @@ let initFacts () =
   tell <| user_prefer("qr_code")
   tell <| qr_decoder("fake system decoder")
   tell <| supported_media0("png")
+  tell <| supported_media0("svg")
+  tell <| supported_media0("jpg")
+  tell <| supported_media0("gif")
   tell <| supported_codec("H.264")
   
 [<CoDa.EntryPoint>]

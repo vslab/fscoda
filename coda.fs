@@ -33,10 +33,6 @@ module Runtime =
   let mutable private trace = false
 
   type private Context() =
-    let rec iterSols f = function
-      | [] -> seq { yield f () }
-      | h::t -> seq { for _ in h do for x in iterSols f t do yield x }
-
     member this.Tell(Fact(name, args)) =
       if trace then
         printfn "Assert %A %A" name args
@@ -48,17 +44,31 @@ module Runtime =
       for _ in YP.retract(Functor.make(name, args)) do
         ()
 
-    member this.Iter(goal:seq<bool>[], f) =
-      goal |> Array.toList |> iterSols f
+    member this.Enumerate(goal:seq<bool>[], vars:Dictionary<string,obj>, vals:Dictionary<string,obj>) =
+      let rec iterSols = function
+      | h::t -> seq { for _ in h do for () in iterSols t do yield () }
+      | [] ->
+        if vars = null then
+          seq { yield () }
+        elif trace then
+          seq {
+            printfn "Solution:"
+            for entry in vars do
+              vals.[entry.Key] <- (entry.Value :?> Variable).getValue()
+              printfn " %A -> %A" (entry.Key) (entry.Value)
+            yield ()
+          }
+        else
+          seq {
+            for entry in vars do
+              vals.[entry.Key] <- (entry.Value :?> Variable).getValue()
+            yield ()
+          }
+      goal |> Array.toList |> iterSols
 
     member this.Solve(goal:seq<bool>[], solution:Dictionary<string,obj>) =
-      let cloneSolution () =
-        if solution <> null then
-          for entry in new Dictionary<_,_>(solution) do
-            if trace then
-              printfn "Solution %A" entry
-            solution.[entry.Key] <- (entry.Value :?> Variable).getValue()
-      this.Iter(goal, cloneSolution)
+      let vars = if solution = null then null else new Dictionary<_,_>(solution)
+      this.Enumerate(goal, vars, solution)
       |> Seq.tryPick Some
       |> Option.isSome
 
@@ -82,7 +92,7 @@ module Runtime =
   let (!-) y : bool =
     failwith "Stub to be replaced by interpreter/compiler"
 
-  let (!--) y : seq<bool> =
+  let (!--) y : seq<unit> =
     failwith "Stub to be replaced by interpreter/compiler"
 
   let (?) x y =
@@ -104,6 +114,7 @@ module Runtime =
 
   let private solutionType = typeof<Dictionary<string,obj>>
   let private unitType = <@ () @>.Type
+  let private currentProperty = typeof<System.Collections.Generic.IEnumerator<unit>>.GetProperty("Current")
 
   let private getTypedPred (mi:System.Reflection.MethodInfo) =
     if mi.GetCustomAttributes(typeof<TypedPredAttribute>, false).Length <> 0 then
@@ -171,18 +182,14 @@ module Runtime =
 
 
       // Behavioural variation
-      | IfThenElse(guard, thenBody, elseBody) ->
-        match guard with
-          | SpecificCall<@ (!-) @>(None, _, [goal]) -> // VA
-            let vaVars,solVar,goal = compileGoal goal
-            let boundVars = boundVars.Add(solVar.Name)
-            let vaExpr = solVarToExpr vaVars solVar
-            Expr.IfThenElse(<@ context.Solve(%%goal, %vaExpr) @>,
-                            compileCoda boundVars dboundVars vaVars vaExpr thenBody,
-                            compile elseBody)
-            |> makeSolBinding vaVars solVar
-          | _ -> // normal if/match
-            Expr.IfThenElse(compile guard, compile thenBody, compile elseBody)
+      | IfThenElse(SpecificCall<@ (!-) @>(None, _, [goal]), thenBody, elseBody) ->
+        let vaVars,solVar,goal = compileGoal goal
+        let boundVars = boundVars.Add(solVar.Name)
+        let vaExpr = solVarToExpr vaVars solVar
+        Expr.IfThenElse(<@ context.Solve(%%goal, %vaExpr) @>,
+                        compileCoda boundVars dboundVars vaVars vaExpr thenBody,
+                        compile elseBody)
+        |> makeSolBinding vaVars solVar
 
       | SpecificCall<@ (?) @>(None, _, [PropertyGet(None, ctx, []); Value(name, t)]) -> // consume variable
         let name = name :?> string
@@ -192,39 +199,57 @@ module Runtime =
           failwith "Cannot use undefined Context-Dependent variables"
 
       | SpecificCall<@ (?) @>(_,_,_) -> // (?) misuse
-        failwith "The ? syntax is only allowed on the ctx object and only in behavioural variations"
+        failwith "The ? syntax is only allowed on the ctx object and only for solved goals"
 
       | SpecificCall<@ (!-) @>(_,_,_) -> // (!-) misuse
         failwith "The !- syntax is only allowed in behavioural variations"
 
 
+      // for
+      | Let(s, SpecificCall<@ (!--) @> (None, _, [goal]), body) ->
+        let boundVars = boundVars.Add(s.Name)
+        let vaVars,solVar,goal = compileGoal goal
+        let boundVars = boundVars.Add(solVar.Name)
+        let varVar = Var(genSym boundVars "variables", solutionType)
+        let boundVars = boundVars.Add(varVar.Name)
+        let valExpr = solVarToExpr vaVars solVar
+        let varExpr = solVarToExpr vaVars varVar
+        let expr = Expr.Let(s,
+                            <@ context.Enumerate(%%goal, %varExpr, %valExpr) @>,
+                            compileCoda boundVars dboundVars vaVars valExpr body)
+        if Set.isEmpty vaVars then
+          expr
+        else
+          Expr.Let(varVar, <@ new Dictionary<string,obj>(%valExpr) @>, expr)
+        |> makeSolBinding vaVars solVar
+        
+
       // Dlet
-      | Let(var, value, body) ->
+      | Let(var, SpecificCall<@ (|-) @>(None, _, [v; goal]), body) ->
         let name = var.Name
         let boundVars = boundVars.Add(name)
-        match value with
-          | SpecificCall<@ (|-) @>(None, _, [v; goal]) -> // dlet
-            let fallbackValue =
-              match dboundVars.TryFind(name) with
-                | None -> Expr.Coerce(<@@ failwith "Context inconsistency detected" @@>, value.Type)
-                | Some lazyFallback -> Expr.Application(lazyFallback, <@ () @>)
-            let vaVars,solVar,goal = compileGoal goal
-            let boundVars = boundVars.Add(solVar.Name)
-            let vaExpr = solVarToExpr vaVars solVar
-            let value = Expr.IfThenElse(<@ context.Solve(%%goal, %vaExpr) @>,
-                            compileCoda boundVars dboundVars vaVars vaExpr v,
-                            fallbackValue)
-            let lazyValue = Expr.Lambda(Var("unused", unitType),
-                                        makeSolBinding vaVars solVar value)
-            let lazyVar = Var(name, lazyValue.Type)
-            let dboundVars = dboundVars.Add(name, Expr.Var(lazyVar))
-            Expr.Let(lazyVar, lazyValue,
-                     compileCoda boundVars dboundVars vaVars vaExpr body)
+        let fallbackValue =
+          match dboundVars.TryFind(name) with
+            | None -> Expr.Coerce(<@@ failwith "Context inconsistency detected" @@>, v.Type)
+            | Some lazyFallback -> Expr.Application(lazyFallback, <@ () @>)
+        let vaVars,solVar,goal = compileGoal goal
+        let boundVars = boundVars.Add(solVar.Name)
+        let vaExpr = solVarToExpr vaVars solVar
+        let value = Expr.IfThenElse(<@ context.Solve(%%goal, %vaExpr) @>,
+                        compileCoda boundVars dboundVars vaVars vaExpr v,
+                        fallbackValue)
+        let lazyValue = Expr.Lambda(Var("unused", unitType),
+                                    makeSolBinding vaVars solVar value)
+        let lazyVar = Var(name, lazyValue.Type)
+        let dboundVars = dboundVars.Add(name, Expr.Var(lazyVar))
+        Expr.Let(lazyVar, lazyValue,
+                 compileCoda boundVars dboundVars vaVars vaExpr body)
 
-          | _ -> // normal let
-            let dboundVars = dboundVars.Remove(name)
-            Expr.Let(var, compile value,
-                     compileCoda boundVars dboundVars vaVars vaExpr body)
+      | Let(var, value, body) -> // normal let
+         let dboundVars = dboundVars.Remove(var.Name)
+         Expr.Let(var, compile value,
+                  compileCoda boundVars dboundVars vaVars vaExpr body)
+
       | Var(v) ->
         match dboundVars.TryFind(v.Name) with
           | None -> expr
