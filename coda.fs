@@ -45,6 +45,8 @@ module Runtime =
         ()
 
     member this.Enumerate(goal:seq<bool>[], vars:Dictionary<string,obj>, vals:Dictionary<string,obj>) =
+      if trace then
+        printfn "Enumerate %A %A" goal vars
       let rec iterSols = function
       | h::t -> seq { for _ in h do for () in iterSols t do yield () }
       | [] ->

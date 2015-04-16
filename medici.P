@@ -3,7 +3,7 @@
 % tipo_medico(Medico, Tipologia)
 
 % reparto_paziente(Paziente, Reparto)
-% esame_fatto(Paziente, Esame)
+% esame_fatto_(Paziente, Esame)
 % esame_prescritto(Paziente, Esame)
 
 % tipo_esame(Esame, Tipologia)
@@ -11,7 +11,7 @@
 
 paziente_visibile(Medico, Paziente) :-
   reparto_medico(Medico, Reparto),
-  reparto_paziente(Reparto, Paziente).
+  reparto_paziente(Paziente, Reparto).
 
 esame_medico(Medico, Esame) :-
   tipo_medico(Medico, Tipologia),
@@ -21,15 +21,15 @@ esame_necessario(Paziente, Esame) :-
   esame_prescritto(Paziente, Esame).
 esame_necessario(Paziente, Esame) :-
   prerequisito_esame(EsameObiettivo, Esame),
-  esame_da_fare(Paziente, EsameObiettivo).
+  esame_necessario(Paziente, EsameObiettivo).
 
 esame_da_fare(Paziente, Esame) :-
   esame_necessario(Paziente, Esame),
-  \+ esame_fatto(Paziente, Esame).
+  \+ esame_fatto_(Paziente, Esame).
 
 requisito_esame_insoddisfatto(Paziente, Esame) :-
   prerequisito_esame(Esame, Prerequisito),
-  \+ esame_fatto(Paziente, Prerequisito).
+  \+ esame_fatto_(Paziente, Prerequisito).
 
 esame_attivo(Paziente, Esame) :-
   esame_da_fare(Paziente, Esame),
@@ -39,3 +39,6 @@ paziente_attivo(Medico, Paziente) :-
   paziente_visibile(Medico, Paziente),
   esame_medico(Medico, Esame),
   esame_attivo(Paziente, Esame).
+
+esame_fatto(Paziente, Esame) :-
+  esame_fatto_(Paziente, Esame).

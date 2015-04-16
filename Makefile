@@ -38,3 +38,12 @@ example.exe: coda.dll example-context.dll example-facts.fs example-types.fs exam
 
 example-short.exe: coda.dll example-ctx.dll example-context.dll example-facts.fs example-types.fs example-sysutils.fs example-short.fs
 	fsharpc --out:$@ -r coda.dll -r Unquote.dll -r example-ctx.dll -r example-context.dll example-short.fs
+
+medici-context.dll: YP.dll medici.cs
+	gmcs -out:$@ -target:library -r:YP.dll medici.cs
+
+medici-ctx.dll: YP.dll medici-context.dll medici-facts.fs medici-types.fs medici-ctx.fs
+	fsharpc -a --out:$@ -r coda.dll -r Unquote.dll -r medici-context.dll medici-facts.fs medici-types.fs medici-ctx.fs
+
+medici.exe: coda.dll medici-ctx.dll medici-context.dll medici.fs
+	fsharpc --out:$@ -r coda.dll -r Unquote.dll -r medici-ctx.dll -r medici-context.dll medici.fs
