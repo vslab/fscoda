@@ -1,3 +1,10 @@
- - variazione del contesto (es: effettuare esame)
- - adattabilita' contesto device (es: esami visualizzabili solo su certi devices)
- - adaptation errors (es: esame senza tipo)
+ - caratteristiche (design) del linguaggio (cenni implementazione)
+ - descrizione dell'esempio (modello del problema (vincoli, desiderata))
+ - contesto (con codice regole e discussione di differenze SQL)
+ * elementi linguaggio (sull 'esempio)
+ * output e traccia sul codice (evoluzione contesto, adattabilita', gestione errori)
+ - discussion pro & con (espressivo vs SQL grazie a deduzione, errori vs analisi statica (formally done, NYI), future work eventi (pull/push))
+ - (implementazione? JIT compilazione, engine Datalog (Prolog) sottostante)
+ - relazione con COP & linguaggi adattivi/relazionali funzionali
+
+patient_needs_done -> patient_needs_result

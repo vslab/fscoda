@@ -1,39 +1,38 @@
 [<CoDa.Code>]
-module Medici.DeviceContext
+module Physicians.DeviceContext
 
 open CoDa.Runtime
-open Medici.Facts
-//open Medici.Types
+open Physicians.Facts
 
 [<CoDa.ContextInit>]
 let initFacts () =
-  tell <| tipo_medico("Dr. Frankenstein", "neurologia")
-  tell <| tipo_medico("Dr. Jekyll", "psicologia")
-  tell <| tipo_medico("Dr. Freud", "cardiologia")
-  tell <| tipo_medico("Joseph Mengele", "pediatria")
-  tell <| tipo_medico("Mr. Hyde", "infermieristica")
+  tell <| physician_exam("Dr. Cox", "ECG")
+  tell <| physician_exam("Dr. Cox", "Blood test")
+  tell <| physician_exam("Dr. Kelso", "CT scan")
+  tell <| physician_exam("Dr. Reid", "EEG")
+  tell <| physician_exam("Dr. Dorian", "Radiography")
+  tell <| physician_exam("Dr. Turk", "Blood test")
 
-  tell <| reparto_medico("Dr. Frankenstein", "Reparto 1")
-  tell <| reparto_medico("Dr. Jekyll", "Reparto 2")
-  tell <| reparto_medico("Dr. Freud", "Reparto 1")
-  tell <| reparto_medico("Joseph Mengele", "Reparto 1")
-  tell <| reparto_medico("Mr. Hyde", "Reparto 3")
+  tell <| physician_has_hw("Dr. Kelso", "3D acceleration")
 
-  tell <| reparto_paziente("Letterio Galletta", "Reparto 2")
-  tell <| reparto_paziente("Pierpaolo Degano", "Reparto 3")
-  tell <| reparto_paziente("Gianluigi Ferrari", "Reparto 3")
-  tell <| reparto_paziente("Andrea Canciani", "Reparto 1")
+  tell <| physician_location("Dr. Cox", "Room 2")
+  tell <| physician_location("Dr. Kelso", "Room 2")
+  tell <| physician_location("Dr. Reid", "Room 1")
+  tell <| physician_location("Dr. Dorian", "Room 3")
+  // Missing location for Dr. Turk
+  // tell <| physician_location("Dr. Turk", "Room 3")
 
-  tell <| tipo_esame("ECG", "cardiologia")
-  tell <| tipo_esame("EEG", "neurologia")
-  tell <| tipo_esame("Lastra", "radiologia")
-  tell <| tipo_esame("TAC", "neurologia")
-  tell <| tipo_esame("Prelievo sanguigno", "infermieristica")
+  tell <| patient_location("Alice", "Room 2")
+  tell <| patient_location("Bob", "Room 2")
+  tell <| patient_location("Charlie", "Room 3")
+  tell <| patient_location("Eve", "Room 1")
 
-  tell <| prerequisito_esame("ECG", "Prelievo sanguigno")
-  tell <| prerequisito_esame("TAC", "EEG")
+  tell <| patient_has_been_prescribed("Alice", "CT scan")
+  tell <| patient_has_been_prescribed("Bob", "ECG")
 
-  tell <| esame_prescritto("Andrea Canciani", "TAC")
-  tell <| esame_prescritto("Letterio Galletta", "ECG")
+  tell <| patient_has_done("Alice", "EEG")
 
-  tell <| esame_fatto("Letterio Galletta", "Prelievo sanguigno")
+  tell <| exam_requirement("ECG", "Blood test")
+  tell <| exam_requirement("CT scan", "EEG")
+
+  tell <| exam_view_hw("CT scan", "3D acceleration")

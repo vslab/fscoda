@@ -18,11 +18,11 @@ example-context.cs: ypc.exe example.P
 	) > $@
 
 medici.cs: ypc.exe medici.P
-	(echo "namespace Medici {"; \
+	(echo "namespace Physicians {"; \
 	 echo "using System;" ; \
 	 echo "using System.Collections.Generic;" ; \
 	 echo "using YieldProlog;" ; \
-	 echo "public class MediciContext {" ; \
+	 echo "public class PhysiciansContext {" ; \
 	 mono ypc.exe < medici.P ; \
 	 echo "}}" ; \
 	) > $@
@@ -46,4 +46,4 @@ medici-ctx.dll: YP.dll medici-context.dll medici-facts.fs medici-types.fs medici
 	fsharpc -a --out:$@ -r coda.dll -r Unquote.dll -r medici-context.dll medici-facts.fs medici-types.fs medici-ctx.fs
 
 medici.exe: coda.dll medici-ctx.dll medici-context.dll medici.fs
-	fsharpc --out:$@ -r coda.dll -r Unquote.dll -r medici-ctx.dll -r medici-context.dll medici.fs
+	fsharpc --out:$@ -g -r coda.dll -r Unquote.dll -r medici-ctx.dll -r medici-context.dll medici.fs

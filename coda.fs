@@ -6,6 +6,7 @@ type Code = ReflectedDefinitionAttribute
 type EntryPointAttribute() =
   inherit System.Attribute()
 
+[<System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = true)>]
 type ContextAttribute(assemblyId:string) =
   inherit System.Attribute()
   member x.Name = assemblyId
@@ -15,6 +16,9 @@ type ContextInitAttribute() =
 
 type TypedPredAttribute() =
   inherit System.Attribute()
+
+type InconsistentContext() =
+  inherit System.Exception("Context inconsistency detected")
 
 type Fact = Fact of string * obj[]
 
@@ -69,6 +73,8 @@ module Runtime =
       goal |> Array.toList |> iterSols
 
     member this.Solve(goal:seq<bool>[], solution:Dictionary<string,obj>) =
+      if trace then
+        printfn "Solve %A %A" goal solution
       let vars = if solution = null then null else new Dictionary<_,_>(solution)
       this.Enumerate(goal, vars, solution)
       |> Seq.tryPick Some
@@ -232,7 +238,7 @@ module Runtime =
         let boundVars = boundVars.Add(name)
         let fallbackValue =
           match dboundVars.TryFind(name) with
-            | None -> Expr.Coerce(<@@ failwith "Context inconsistency detected" @@>, v.Type)
+            | None -> Expr.Coerce(<@@ raise <| InconsistentContext() @@>, v.Type)
             | Some lazyFallback -> Expr.Application(lazyFallback, <@ () @>)
         let vaVars,solVar,goal = compileGoal goal
         let boundVars = boundVars.Add(solVar.Name)

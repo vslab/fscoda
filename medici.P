@@ -1,44 +1,51 @@
-% fatti
-% reparto_medico(Medico, Reparto)
-% tipo_medico(Medico, Tipologia)
+% facts
+physician_location(Physician, Location) :- physician_location_(Physician, Location).
+physician_exam(Physician, Exam) :- physician_exam_(Physician, Exam).
+physician_has_hw(Physician, Hardware) :- physician_has_hw_(Physician, Hardware).
 
-% reparto_paziente(Paziente, Reparto)
-% esame_fatto_(Paziente, Esame)
-% esame_prescritto(Paziente, Esame)
+patient_location(Patient, Location) :- patient_location_(Patient, Location).
+patient_has_done(Patient, Exam) :- patient_has_done_(Patient, Exam).
+patient_has_been_prescribed(Patient, Exam) :- patient_has_been_prescribed_(Patient, Exam).
 
-% tipo_esame(Esame, Tipologia)
-% prerequisito_esame(Esame, Prerequisito)
+exam_requirement(Exam, Requirement) :- exam_requirement_(Exam, Requirement).
 
-paziente_visibile(Medico, Paziente) :-
-  reparto_medico(Medico, Reparto),
-  reparto_paziente(Paziente, Reparto).
+exam_view_hw(Exam, Hardware) :- exam_view_hw_(Exam, Hardware).
 
-esame_medico(Medico, Esame) :-
-  tipo_medico(Medico, Tipologia),
-  tipo_esame(Esame, Tipologia).
+% rules
+physician_can_view_patient(Physician, Patient) :-
+  physician_location(Physician, Location),
+  patient_location(Patient, Location).
 
-esame_necessario(Paziente, Esame) :-
-  esame_prescritto(Paziente, Esame).
-esame_necessario(Paziente, Esame) :-
-  prerequisito_esame(EsameObiettivo, Esame),
-  esame_necessario(Paziente, EsameObiettivo).
+patient_needs_done(Patient, Exam) :-
+  patient_has_been_prescribed(Patient, Exam).
+patient_needs_done(Patient, Exam) :-
+  exam_requirement(TargetExam, Exam),
+  patient_needs_done(Patient, TargetExam).
 
-esame_da_fare(Paziente, Esame) :-
-  esame_necessario(Paziente, Esame),
-  \+ esame_fatto_(Paziente, Esame).
+patient_should_do(Patient, Exam) :-
+  patient_needs_done(Patient, Exam),
+  \+ patient_has_done(Patient, Exam).
 
-requisito_esame_insoddisfatto(Paziente, Esame) :-
-  prerequisito_esame(Esame, Prerequisito),
-  \+ esame_fatto_(Paziente, Prerequisito).
+patient_cannot_do(Patient, Exam) :-
+  exam_requirement(Exam, Requirement),
+  \+ patient_has_done(Patient, Requirement).
 
-esame_attivo(Paziente, Esame) :-
-  esame_da_fare(Paziente, Esame),
-  \+ requisito_esame_insoddisfatto(Paziente, Esame).
+patient_active_exam(Patient, Exam) :-
+  patient_should_do(Patient, Exam),
+  \+ patient_cannot_do(Patient, Exam).
 
-paziente_attivo(Medico, Paziente) :-
-  paziente_visibile(Medico, Paziente),
-  esame_medico(Medico, Esame),
-  esame_attivo(Paziente, Esame).
+physician_can_view_exam(Physician, Exam) :-
+  \+ exam_view_hw(Exam, Hardware).
+physician_can_view_exam(Physician, Exam) :-
+  physician_has_hw(Physician, Hardware),
+  exam_view_hw(Exam, Hardware).
 
-esame_fatto(Paziente, Esame) :-
-  esame_fatto_(Paziente, Esame).
+device_can_display_exam(Device, Exam) :-
+  device_has_caps(Device, Capability),
+  exam_view_caps(Exam, Capability).
+
+
+device_has_caps("iPhone 5", "3D acceleration").
+device_has_caps("iPhone 5", "Video codec").
+device_has_caps("iPhone 5", "Text display").
+device_has_caps("Apple Watch", "Text display").

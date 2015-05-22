@@ -1,51 +1,52 @@
-module Medici.Types
+module Physicians.Types
 
 open CoDa
 
 [<TypedPred>]
 [<Code>]
-let paziente_visibile (m:string, p:string) =
+let physician_exam (m:string, e:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.paziente_visibile(m, p)
+    Physicians.PhysiciansContext.physician_exam(m, e)
 
 [<TypedPred>]
 [<Code>]
-let paziente_attivo (m:string, p:string) =
+let physician_location (m:string, e:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.paziente_attivo(m, p)
+    Physicians.PhysiciansContext.physician_location(m, e)
 
 [<TypedPred>]
 [<Code>]
-let esame_da_fare (p:string, e:string) =
+let physician_can_view_patient (m:string, p:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.esame_da_fare(p, e)
+    Physicians.PhysiciansContext.physician_can_view_patient(m, p)
 
 [<TypedPred>]
 [<Code>]
-let esame_attivo (p:string, e:string) =
+let patient_active_exam (p:string, e:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.esame_attivo(p, e)
+    Physicians.PhysiciansContext.patient_active_exam(p, e)
 
 [<TypedPred>]
 [<Code>]
-let esame_fatto (p:string, e:string) =
+let patient_has_done (p:string, e:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.esame_fatto(p, e)
+    Physicians.PhysiciansContext.patient_has_done(p, e)
 
 [<TypedPred>]
 [<Code>]
-let esame_medico (m:string, e:string) =
+let physician_can_view_exam (p:string, e:string) =
   if true then
     failwith "Solved by JIT"
   else
-    Medici.MediciContext.esame_medico(m, e)
+    Physicians.PhysiciansContext.physician_can_view_exam(p, e)
+

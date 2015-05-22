@@ -1,41 +1,62 @@
 [<CoDa.Code>]
-module Medici.Test
+module Physicians.Test
 
 open CoDa.Runtime
-//open Medici.Facts
-open Medici.Types
+open Physicians.Types
+
+let find_physician phy =
+  try
+    let loc = ctx?location |-
+              physician_location(phy, ctx?location)
+    loc
+  with e ->
+    printfn "WARNING: cannot locate %s:\n%A" phy e
+    "unknown location"
+
+let display_exam phy exam =
+  match ctx with
+  | _ when !- physician_can_view_exam(phy, exam) -> printfn " - %s" exam
+  | _ -> printfn " - %s (current device cannot display the exam data)" exam
+
+let display phy pat =
+  match ctx with
+  | _ when !- physician_can_view_patient(phy, pat) ->
+    match ctx with
+    | _ when !- patient_has_done(pat, ctx?e) ->
+      printfn "%s sees that %s has done:" phy pat
+      for _ in !-- patient_has_done(pat, ctx?exam) do
+        display_exam phy ctx?exam
+    | _ -> printfn "%s sees that %s has done no exam" phy pat
+
+    let next_exam = "no exam" |- True
+    let next_exam = ctx?exam |- (physician_exam(phy, ctx?exam),
+                                 patient_active_exam(pat, ctx?exam))
+    printfn "%s can perform %s on %s" phy next_exam pat
+  | _ -> printfn "%s cannot view details on %s" phy pat
 
 [<CoDa.Context("medici-ctx")>]
+[<CoDa.Context("example-ctx")>]
 [<CoDa.EntryPoint>]
 let main () =
-  let updates = seq {
-    yield ()
-    tell <| Medici.Facts.esame_fatto("Andrea Canciani", "EEG")
-    yield ()
-    tell <| Medici.Facts.esame_fatto("Andrea Canciani", "TAC")
-    yield ()
-  }
+  display "Dr. Turk" "Bob"
+  display "Dr. Cox" "Bob"
+  printfn ""
 
-  let storia_paziente = "" |- True
-  for _ in updates do
-    for _ in !-- paziente_visibile(ctx?medico, ctx?paziente) do
-      let m = ctx?medico
-      let p = ctx?paziente
-      let storia_paziente =
-        (let mutable s = " e sa che ha fatto:" in
-         for _ in !-- esame_fatto(p, ctx?esame) do
-           s <- sprintf "%s\n - %s" s (ctx?esame) 
-         s) |- esame_fatto(p, ctx?es)
+  display "Dr. Cox" "Alice"
+  display "Dr. Kelso" "Alice"
+  printfn ""
 
-      match ctx with
-        | _ when !- (paziente_visibile(m, p),
-          esame_medico(m, ctx?esame),
-          esame_attivo(p, ctx?esame)) -> printfn "%s deve fare l'esame \"%s\" su %s%s" m (ctx?esame) p storia_paziente
+  tell <| Physicians.Facts.patient_has_done("Alice", "TC")
+  display "Dr. Cox" "Alice"
+  display "Dr. Kelso" "Alice"
+  printfn ""
 
-        //| _ when !- paziente_attivo(m,p) -> printfn "%s deve fare esami su %s%s" m p storia_paziente
-        | _ -> printfn "%s vede %s%s" m p storia_paziente
-    printfn ""
+  for _ in !-- (patient_active_exam("Bob", ctx?exam),
+                physician_exam(ctx?physician, ctx?exam)) do
+      printfn "%s (currently in %s) might perform %s on Bob"
+        ctx?physician (find_physician ctx?physician) ctx?exam
 
 do
   run ()
   //debug ()
+
