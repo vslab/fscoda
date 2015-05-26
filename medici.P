@@ -45,7 +45,7 @@ device_can_display_exam(Device, Exam) :-
   exam_view_caps(Exam, Capability).
 
 
-device_has_caps("iPhone 5", "3D acceleration").
-device_has_caps("iPhone 5", "Video codec").
-device_has_caps("iPhone 5", "Text display").
-device_has_caps("Apple Watch", "Text display").
+device_has_caps('iPhone 5', '3D acceleration').
+device_has_caps('iPhone 5', 'Video codec').
+device_has_caps('iPhone 5', 'Text display').
+device_has_caps('Apple Watch', 'Text display').
