@@ -9,6 +9,8 @@ The original MLCoDa references are:
 
 This prototype and the associated example can be built and run on a Unix-based system simply with the
 
-```make```
+```
+make
+```
 
 command, assuming that Mono and F# are installed.
