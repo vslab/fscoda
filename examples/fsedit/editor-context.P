@@ -1,0 +1,21 @@
+execution_mode(M) :- execution_mode_(M).
+
+tokens(TS) :- tokens_(TS), execution_mode(programming).
+
+file_dialog_filter(F) :- execution_mode(M), file_dialog_filter_(F,M).
+file_dialog_file_ext(E) :- execution_mode(M), file_dialog_file_ext_(E,M).
+
+stream_type(S) :- execution_mode(M), stream_type_(S,M).
+
+
+%% file_dialog_filter("Rich Text File (*.rtf)|*.rtf") :- execution_mode(rtf).
+%% file_dialog_filter("C Source Code (*.c)|*.c") :- execution_mode(programming).
+%% file_dialog_filter("Plain Text File (*.txt)|*.txt") :- execution_mode(text).
+
+%% file_dialog_file_ext("*.rtf") :- execution_mode("rtf").
+%% file_dialog_file_ext("*.c") :- execution_mode("programming").
+%% file_dialog_file_ext("*.txt") :- execution_mode("text").
+
+%stream_type("richtext") :- execution_mode("rtf"). 
+%stream_type("plaintext") :- execution_mode(S).
+
