@@ -34,6 +34,8 @@ module Runtime =
   open Swensen.Unquote.Extensions
   open YieldProlog
 
+  let compiledExprs = Dictionary()
+
   let mutable private trace = false
 
   type private Context() =
@@ -295,11 +297,14 @@ module Runtime =
         if types.Length <> args.Length then
           failwith "Mismatch between args and signature"
 
-        let translated = compileCoda (Set.empty) (Map.empty) (Set.empty) (Unchecked.defaultof<_>) quot
-        if trace then
-          printfn "translated to"
-          printfn "%s" (translated.Decompile())
+        if not (compiledExprs.ContainsKey(mi)) then
+          let translated = compileCoda (Set.empty) (Map.empty) (Set.empty) (Unchecked.defaultof<_>) quot
+          compiledExprs.[mi] <- translated
+          if trace then
+            printfn "translated to"
+            printfn "%s" (translated.Decompile())
 
+        let translated = compiledExprs.[mi]
         let call =
           if args.Length = 0 then
             Expr.Application(translated, <@ () @>)
